@@ -1,0 +1,102 @@
+#!/bin/env python
+import sys
+
+# bitmasks for mate order; cf. sam spec.
+FIRST_MATE = int(64)
+SECOND_MATE = int(128)
+
+# metrics for debugging
+SINGLE_READS = -1
+AMBIGUOUS_PAIRS = 0
+
+def printFastq(read, unique_id):
+    # unimplemented.
+    #   this function would replace a subsequent pipeline operation
+    #   when converting sam -> fastq
+    pass
+
+def printSam(read, unique_id):
+    # append unique_id to the first field (if any) of the readname
+    rest = read.split()[1:]
+    r = read.split()[0].split(':')
+    name = r[0] + "_" + str(unique_id) + ':' + ':'.join(r[1:])
+    return name + '\t' + '\t'.join(rest)
+
+def firstMate(read):
+    return int(read.split()[1]) & FIRST_MATE
+
+def secondMate(read):
+    return int(read.split()[1]) & SECOND_MATE
+
+def mates(r1, r2):
+    if not ((firstMate(r1) and secondMate(r2)) or
+            (firstMate(r2) and secondMate(r1))):
+        return False
+    
+    if ((r1.split()[6] == '=') and (r2.split()[6] == '=')):
+        if not (r1.split()[2] == r2.split()[2]):
+            return False
+
+    if not ((int(r1.split()[3]) == int(r2.split()[7])) and
+            (int(r2.split()[3]) == int(r1.split()[7]))):
+        return False
+
+    return True
+
+def findPairs(matched_reads):
+    if len(matched_reads) == 0:
+        return []
+    pairs = []
+    rejects = []
+    for mate in matched_reads[1:]:
+        if mates(matched_reads[0], mate):
+            if firstMate(matched_reads[0]):
+                pairs.append((matched_reads[0], mate))
+            else:
+                pairs.append((mate, matched_reads[0]))
+        else:
+            rejects.append(mate)
+
+    return pairs + findPairs(rejects)
+
+if __name__ == "__main__":
+    sam = sys.stdin
+    
+    matching_reads = ['.']
+
+    if len(sys.argv) == 2:
+        sam = open(sys.argv[1])
+    elif len(sys.argv) != 1:
+        print >> sys.stderr, "Usage:", sys.argv[0], "[in.sam]" 
+        exit()
+    
+    for line in sam:
+        # Pass header lines straight to output
+        if line[0] == '@':
+            print line.strip()
+            continue
+        read_name = line.split()[0]
+        if read_name == matching_reads[0].split()[0]:
+            matching_reads.append(line)
+     # if a string comparision can tell us that the adjacent reads
+     # are infact not sorted, here would be the place:
+
+     #   elif read_name < matching_reads[0]:
+     #       raise("The input is not sorted by name!")
+               
+        else:
+            pairs = findPairs(matching_reads)
+            if len(matching_reads) == 1:
+                SINGLE_READS += 1
+            if len(pairs) > 1:
+                AMBIGUOUS_PAIRS += 1
+            for i in range(0, len(pairs)):
+                print printSam(pairs[i][0], i)
+                print printSam(pairs[i][1], i)
+
+            matching_reads = [line]
+
+    sam.close()
+
+print >> sys.stderr, "Lonely reads:\t" + str(SINGLE_READS)
+print >> sys.stderr, "Ambiguous pairs:\t" + str(AMBIGUOUS_PAIRS)
