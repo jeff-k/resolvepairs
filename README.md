@@ -6,6 +6,7 @@ A short python script for resolving pair membership for groups of reads with the
 When reconstructing a FASTQ file from an aligned BAM, it is sometimes the case that query names will be non-unique not only between mates but across pairs of mates.  This script will append a unique id to the names of reads belonging to the same mate pair.
 
 Running SamToFastq from Picard tools on a input file with ambiguous pairs will cause it too fail with:
+
     Exception in thread "main" net.sf.picard.PicardException: Illegal mate state: [Read Name]
     
 resolvepair reads a name sorted SAM file from STDIN and writes a SAM file with renamed query names to STDOUT.
@@ -13,7 +14,7 @@ resolvepair reads a name sorted SAM file from STDIN and writes a SAM file with r
 Example
 -------
 
-    samtools sort -o -n input.bam | resolvepair | java -Xmx16g -XX:-UseGCOverheadLimit -jar $PICARD/SamToFastq.jar I=/dev/stdin F=r_1.fastq F2=r_2.fastq
+    samtools sort -o -n input.bam | ./resolvepair | java -Xmx16g -XX:-UseGCOverheadLimit -jar $PICARD/SamToFastq.jar I=/dev/stdin F=r_1.fastq F2=r_2.fastq
 
 Behaviour
 ---------
