@@ -72,9 +72,9 @@ if __name__ == "__main__":
     
     for line in sam:
         # Pass header lines straight to output
-        if line[0] == '@':
-            print line.strip()
-            continue
+        #if line[0] == '@':
+        #    print line.strip()
+        #    continue
         read_name = line.split()[0]
         if read_name == matching_reads[0].split()[0]:
             matching_reads.append(line)
