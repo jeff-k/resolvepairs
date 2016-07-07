@@ -1,4 +1,10 @@
 #!/bin/env python
+"""
+    resolvepairs
+        Resolves ambiguous read pair identities
+"""
+
+
 from __future__ import print_function
 import sys
 
@@ -10,32 +16,39 @@ SECOND_MATE = int(128)
 SINGLE_READS = -1
 AMBIGUOUS_PAIRS = 0
 
-def printFastq(read, unique_id):
-    # unimplemented.
-    #   this function would replace a subsequent pipeline operation
-    #   when converting sam -> fastq
+def printfastq():
+    """ unimplemented.
+       this function would replace a subsequent pipeline operation
+       when converting sam -> fastq
+    """
     pass
 
-def printSam(read, unique_id):
-    # append unique_id to the first field (if any) of the readname
+def printsam(read, unique_id):
+    """ append unique_id to the first field (if any) of the readname
+    """
     rest = read.split()[1:]
     r = read.split()[0].split(':')
     name = r[0] + "_" + str(unique_id) + ':' + ':'.join(r[1:])
     return name + '\t' + '\t'.join(rest)
 
-def firstMate(read):
+def firstmate(read):
+    """ Test read's data field against the first mate flag """
     return int(read.split()[1]) & FIRST_MATE
 
-def secondMate(read):
+def secondmate(read):
+    """ Test read's data field against the second mate flag """
     return int(read.split()[1]) & SECOND_MATE
 
 def mates(r1, r2):
-    if not ((firstMate(r1) and secondMate(r2)) or
-            (firstMate(r2) and secondMate(r1))):
+    """
+        Returns a boolean value indicating that a pair of reads are mates
+    """
+    if not (firstmate(r1) and secondmate(r2) or
+            firstmate(r2) and secondmate(r1)):
         return False
-    
-    if ((r1.split()[6] == '=') and (r2.split()[6] == '=')):
-        if not (r1.split()[2] == r2.split()[2]):
+
+    if (r1.split()[6] == '=') and (r2.split()[6] == '='):
+        if not r1.split()[2] == r2.split()[2]:
             return False
 
     if not ((int(r1.split()[3]) == int(r2.split()[7])) and
@@ -44,33 +57,35 @@ def mates(r1, r2):
 
     return True
 
-def findPairs(matched_reads):
+def findpairs(matched_reads):
+    """
+        Return paired reads from a set of candidates
+    """
     if len(matched_reads) == 0:
         return []
-    pairs = []
+    _pairs = []
     rejects = []
     for mate in matched_reads[1:]:
         if mates(matched_reads[0], mate):
-            if firstMate(matched_reads[0]):
+            if firstmate(matched_reads[0]):
                 pairs.append((matched_reads[0], mate))
             else:
                 pairs.append((mate, matched_reads[0]))
         else:
             rejects.append(mate)
 
-    return pairs + findPairs(rejects)
+    return _pairs + findpairs(rejects)
 
 if __name__ == "__main__":
     sam = sys.stdin
-    
     matching_reads = ['.']
 
     if len(sys.argv) == 2:
         sam = open(sys.argv[1])
     elif len(sys.argv) != 1:
-        print("Usage:", sys.argv[0], "[in.sam]", file=sys.stderr) 
+        print("Usage:", sys.argv[0], "[in.sam]", file=sys.stderr)
         exit()
-    
+
     for line in sam:
         # Pass header lines straight to output
         if line[0] == '@':
@@ -84,16 +99,15 @@ if __name__ == "__main__":
 
      #   elif read_name < matching_reads[0]:
      #       raise("The input is not sorted by name!")
-               
         else:
-            pairs = findPairs(matching_reads)
+            pairs = findpairs(matching_reads)
             if len(matching_reads) == 1:
                 SINGLE_READS += 1
             if len(pairs) > 1:
                 AMBIGUOUS_PAIRS += 1
             for i in range(0, len(pairs)):
-                print(printSam(pairs[i][0], i))
-                print(printSam(pairs[i][1], i))
+                print(printsam(pairs[i][0], i))
+                print(printsam(pairs[i][1], i))
 
             matching_reads = [line]
 
