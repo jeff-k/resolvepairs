@@ -1,9 +1,6 @@
 #!/bin/env python
+"""Resolves ambiguous read pair identities
 """
-    resolvepairs
-        Resolves ambiguous read pair identities
-"""
-
 
 from __future__ import print_function
 import sys
@@ -17,14 +14,13 @@ SINGLE_READS = -1
 AMBIGUOUS_PAIRS = 0
 
 def printfastq():
-    """ unimplemented.
-       this function would replace a subsequent pipeline operation
-       when converting sam -> fastq
+    """Dump contents of Sam to Fastq file pairs
+    (unimplemented)
     """
     pass
 
 def printsam(read, unique_id):
-    """ append unique_id to the first field (if any) of the readname
+    """Append unique_id to the first field (if any) of the readname
     """
     rest = read.split()[1:]
     r = read.split()[0].split(':')
@@ -32,17 +28,15 @@ def printsam(read, unique_id):
     return name + '\t' + '\t'.join(rest)
 
 def firstmate(read):
-    """ Test read's data field against the first mate flag """
+    """Test read's data field against the first mate flag"""
     return int(read.split()[1]) & FIRST_MATE
 
 def secondmate(read):
-    """ Test read's data field against the second mate flag """
+    """Test read's data field against the second mate flag"""
     return int(read.split()[1]) & SECOND_MATE
 
 def mates(r1, r2):
-    """
-        Returns a boolean value indicating that a pair of reads are mates
-    """
+    """Returns a boolean value indicating that a pair of reads are mates"""
     if not (firstmate(r1) and secondmate(r2) or
             firstmate(r2) and secondmate(r1)):
         return False
@@ -58,9 +52,7 @@ def mates(r1, r2):
     return True
 
 def findpairs(matched_reads):
-    """
-        Return paired reads from a set of candidates
-    """
+    """Return paired reads from a set of candidates"""
     if len(matched_reads) == 0:
         return []
     _pairs = []
